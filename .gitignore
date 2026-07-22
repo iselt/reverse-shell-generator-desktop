@@ -1,5 +1,11 @@
 .netlify/
 .parcel-cache/
 dist/
+dist-desktop/
 node_modules/
-package-lock.json
+
+# Tauri / Rust
+src-tauri/target/
+src-tauri/gen/
+*.log
+.DS_Store

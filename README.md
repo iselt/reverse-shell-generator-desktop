@@ -1,89 +1,124 @@
-# reverse-shell-generator
-<!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-16-orange.svg?style=flat-square)](#contributors-)
-<!-- ALL-CONTRIBUTORS-BADGE:END -->
-Hosted Reverse Shell generator with a ton of functionality -- (great for CTFs)
-<br> [![Netlify Status](https://api.netlify.com/api/v1/badges/46dbabe0-23b7-42e6-b04b-e1769dc455ce/deploy-status)](https://app.netlify.com/sites/brave-swartz-5dcdab/deploys)
+# reverse-shell-generator-desktop
 
-### Hosted Instance
-https://revshells.com
+Desktop port of [0dayCTF/reverse-shell-generator](https://github.com/0dayCTF/reverse-shell-generator) (hosted at [revshells.com](https://revshells.com)).
 
-### Features
+Built with **[Tauri 2](https://tauri.app/)** so the UI runs in the **system WebView** (WebView2 / WKWebView / WebKitGTK) — low memory, no Chromium bundle.
 
-- Generate common listeners and reverse shells
-- Save button to download Payloads from browser.
-- Raw mode to cURL shells to your machine.
-- Button to increment the listening port number by 1
-- URI and Base64 encoding
-- LocalStorage to persist your configuration
-- Dark, Light and Meme Modes
-- HoaxShell integration with custom listener (see link below for more information) | Credit: https://github.com/t3l3machus
+| Platform | Web engine |
+| --- | --- |
+| Windows | WebView2 (Edge) |
+| macOS | WKWebView |
+| Linux | WebKitGTK |
 
-### HoaxShell Listener Docs
+## Features
 
-[https://github.com/t3l3machus/hoaxshell/tree/main/revshells](https://github.com/t3l3machus/hoaxshell/tree/main/revshells)
+- Same reverse / bind / MSFVenom / HoaxShell / assembled payload UI as the web app
+- Offline-friendly download & raw payload (no Netlify functions required)
+- LocalStorage for IP / port / theme persistence
+- Default HTTP(S) proxy: `127.0.0.1:7897` (Clash / V2Ray mixed port)
 
-### Screenshot
+## Prebuilt binaries
 
-<img width="1167" height="894" alt="image" src="https://github.com/user-attachments/assets/d3a69a2c-3c05-4bd8-b9ad-3e839a5c4f32" />
+GitHub Actions builds **3 platforms × 2 architectures** on every push to `main` and on version tags:
 
+| | x64 | arm64 |
+| --- | --- | --- |
+| **Windows** | ✅ | ✅ |
+| **macOS** | ✅ | ✅ |
+| **Linux** | ✅ | ✅ |
 
-## Dev
+Artifacts are uploaded per-target as `reverse-shell-generator-<platform>-<arch>`.  
+Tagging `v*` also drafts a GitHub Release with installers (`.msi` / `.dmg` / `.AppImage` / `.deb`, etc.).
 
-It's recommended to use the netlify dev command if you're wanting to modify any of the server functions, such as for raw link support:
+## Network proxy
 
+On launch the app sets standard proxy environment variables to:
+
+```text
+http://127.0.0.1:7897
 ```
-npx netlify dev
+
+with `NO_PROXY=localhost,127.0.0.1,::1`.
+
+Override at runtime:
+
+```bash
+# custom proxy
+RSG_HTTP_PROXY=http://127.0.0.1:7890 ./reverse-shell-generator
+
+# or use the usual vars
+HTTP_PROXY=http://127.0.0.1:7890 HTTPS_PROXY=http://127.0.0.1:7890 ./reverse-shell-generator
 ```
 
-## Using Docker
-Simply run the following commands within this repository to spin up the instance locally using a Docker container
+> Note: the payload generator itself is offline. The proxy mainly affects any outbound requests made by the WebView (e.g. remote assets / future features). System WebView stacks may still use OS-level proxy settings depending on the platform.
 
+## Develop
+
+### Prerequisites
+
+- [Node.js](https://nodejs.org/) 18+
+- [Rust](https://rustup.rs/) stable
+- Platform WebView deps:
+  - **macOS**: Xcode CLT
+  - **Windows**: [WebView2](https://developer.microsoft.com/en-us/microsoft-edge/webview2/) + VS Build Tools
+  - **Linux**: `libwebkit2gtk-4.1-dev`, `libgtk-3-dev`, `libappindicator3-dev`, `librsvg2-dev`, `patchelf`
+
+### Run / build
+
+```bash
+npm install
+
+# dev (opens the desktop window)
+npm run desktop:dev
+# or
+cargo tauri dev
+
+# release build for the host machine
+npm run desktop:build
+# or
+cargo tauri build
 ```
+
+Release artifacts land under:
+
+```text
+src-tauri/target/release/bundle/
+```
+
+### Cross-target example (Apple Silicon → Intel macOS)
+
+```bash
+rustup target add x86_64-apple-darwin
+cargo tauri build --target x86_64-apple-darwin
+```
+
+## Web / Docker (upstream)
+
+The original static site + Netlify functions still work:
+
+```bash
+# static bundle (Parcel)
+npm run build
+
+# Docker (nginx)
 docker build -t reverse_shell_generator .
-
 docker run -d -p 80:80 reverse_shell_generator
 ```
 
-Browse to http://localhost:80
+For Netlify function / raw-link development:
+
+```bash
+npx netlify dev
+```
+
+## License
+
+Same as upstream — see [LICENSE](./LICENSE).
+
+## Upstream
+
+Forked from https://github.com/0dayCTF/reverse-shell-generator
 
 ## Contributors ✨
 
-Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
-
-<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
-<!-- prettier-ignore-start -->
-<!-- markdownlint-disable -->
-<table>
-  <tbody>
-    <tr>
-      <td align="center" valign="top" width="14.28%"><a href="http://ryanmontgomery.me"><img src="https://avatars.githubusercontent.com/u/44453666?v=4?s=100" width="100px;" alt="Ryan Montgomery"/><br /><sub><b>Ryan Montgomery</b></sub></a><br /><a href="https://github.com/0dayCTF/reverse-shell-generator/pulls?q=is%3Apr+reviewed-by%3A0dayCTF" title="Reviewed Pull Requests">👀</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://briskets.io"><img src="https://avatars.githubusercontent.com/u/58673953?v=4?s=100" width="100px;" alt="Chris Wild"/><br /><sub><b>Chris Wild</b></sub></a><br /><a href="#projectManagement-briskets" title="Project Management">📆</a> <a href="#tool-briskets" title="Tools">🔧</a> <a href="#infra-briskets" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a> <a href="#design-briskets" title="Design">🎨</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://papadope.net/"><img src="https://avatars.githubusercontent.com/u/28659477?v=4?s=100" width="100px;" alt="Chris Papadopoulos"/><br /><sub><b>Chris Papadopoulos</b></sub></a><br /><a href="#design-Papadope" title="Design">🎨</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://www.alanfoster.me/"><img src="https://avatars.githubusercontent.com/u/1271782?v=4?s=100" width="100px;" alt="Alan Foster"/><br /><sub><b>Alan Foster</b></sub></a><br /><a href="#infra-AlanFoster" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://muir.land"><img src="https://avatars.githubusercontent.com/u/58998623?v=4?s=100" width="100px;" alt="AG"/><br /><sub><b>AG</b></sub></a><br /><a href="#maintenance-MuirlandOracle" title="Maintenance">🚧</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/0x03f3"><img src="https://avatars.githubusercontent.com/u/24409121?v=4?s=100" width="100px;" alt="Joseph Rose"/><br /><sub><b>Joseph Rose</b></sub></a><br /><a href="#ideas-0x03f3" title="Ideas, Planning, & Feedback">🤔</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/JabbaSec"><img src="https://avatars.githubusercontent.com/u/68778279?v=4?s=100" width="100px;" alt="Jabba"/><br /><sub><b>Jabba</b></sub></a><br /><a href="#data-JabbaSec" title="Data">🔣</a></td>
-    </tr>
-    <tr>
-      <td align="center" valign="top" width="14.28%"><a href="http://www.jake-ruston.com"><img src="https://avatars.githubusercontent.com/u/22551835?v=4?s=100" width="100px;" alt="Jake Ruston"/><br /><sub><b>Jake Ruston</b></sub></a><br /><a href="#data-Jake-Ruston" title="Data">🔣</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://h0j3n.github.io/"><img src="https://avatars.githubusercontent.com/u/51261763?v=4?s=100" width="100px;" alt="Muhammad Ali"/><br /><sub><b>Muhammad Ali</b></sub></a><br /><a href="#tool-H0j3n" title="Tools">🔧</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="http://sprucelab.site"><img src="https://avatars.githubusercontent.com/u/33971688?v=4?s=100" width="100px;" alt="edrapac"/><br /><sub><b>edrapac</b></sub></a><br /><a href="#tool-edrapac" title="Tools">🔧</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://epi052.gitlab.io/notes-to-self/"><img src="https://avatars.githubusercontent.com/u/43392618?v=4?s=100" width="100px;" alt="epi"/><br /><sub><b>epi</b></sub></a><br /><a href="#tool-epi052" title="Tools">🔧</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://skerritt.blog"><img src="https://avatars.githubusercontent.com/u/10378052?v=4?s=100" width="100px;" alt="Brandon"/><br /><sub><b>Brandon</b></sub></a><br /><a href="https://github.com/0dayCTF/reverse-shell-generator/commits?author=bee-san" title="Code">💻</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://robiot.github.io/"><img src="https://avatars.githubusercontent.com/u/68228472?v=4?s=100" width="100px;" alt="Robiot"/><br /><sub><b>Robiot</b></sub></a><br /><a href="#content-robiot" title="Content">🖋</a> <a href="#maintenance-robiot" title="Maintenance">🚧</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/Hydragyrum"><img src="https://avatars.githubusercontent.com/u/4928181?v=4?s=100" width="100px;" alt="Adam Bertrand"/><br /><sub><b>Adam Bertrand</b></sub></a><br /><a href="#content-Hydragyrum" title="Content">🖋</a></td>
-    </tr>
-    <tr>
-      <td align="center" valign="top" width="14.28%"><a href="http://rohitkumarankam.com"><img src="https://avatars.githubusercontent.com/u/70012972?v=4?s=100" width="100px;" alt="Rohit Kumar Ankam"/><br /><sub><b>Rohit Kumar Ankam</b></sub></a><br /><a href="#tool-rohitkumarankam" title="Tools">🔧</a></td>
-      <td align="center" valign="top" width="14.28%"><a href="https://github.com/t3l3machus"><img src="https://avatars.githubusercontent.com/u/75489922?v=4?s=100" width="100px;" alt="Panagiotis Chartas"/><br /><sub><b>Panagiotis Chartas</b></sub></a><br /><a href="#infra-t3l3machus" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a> <a href="#tool-t3l3machus" title="Tools">🔧</a></td>
-    </tr>
-  </tbody>
-</table>
-
-<!-- markdownlint-restore -->
-<!-- prettier-ignore-end -->
-
-<!-- ALL-CONTRIBUTORS-LIST:END -->
-
-This project follows the [all-contributors](https://github.com/all-contributors/all-contributors) specification. Contributions of any kind welcome!
+Upstream project follows the [all-contributors](https://github.com/all-contributors/all-contributors) specification. See the original repository for the full list.

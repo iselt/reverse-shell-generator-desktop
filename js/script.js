@@ -91,8 +91,17 @@ document.querySelector("#assembled-tab").addEventListener("click", () => {
 var rawLinkButtons = document.querySelectorAll('.raw-listener');
 for (const button of rawLinkButtons) {
     button.addEventListener("click", () => {
-        const rawLink = RawLink.generate(rsg);
-        window.location = rawLink;
+        // Desktop / offline: serve raw payload via blob URL (no Netlify functions).
+        // Hosted builds that still have a raw endpoint can set window.RSG_USE_SERVER_RAW = true.
+        if (window.RSG_USE_SERVER_RAW) {
+            const rawLink = RawLink.generate(rsg);
+            window.location = rawLink;
+            return;
+        }
+        const commandSelector = rsg.uiElements[rsg.commandType].command;
+        const payload = document.querySelector(commandSelector).innerText;
+        const blobUrl = URL.createObjectURL(new Blob([payload], { type: 'text/plain;charset=utf-8' }));
+        window.open(blobUrl, '_blank');
     });
 }
 
@@ -671,21 +680,17 @@ for (const Dbutton of downloadButton) {
     Dbutton.addEventListener("click", () => {
         const filename = prompt('Enter a filename', 'payload.sh')
         if(filename===null)return;
-        const rawLink = RawLink.generate(rsg);
-        axios({
-            url: rawLink,
-            method: 'GET',
-            responseType: 'arraybuffer',
-        })
-        .then((response)=>{
-            const url = window.URL.createObjectURL(new File([response.data], filename ));
-            const downloadElement = document.createElement("a");
-            downloadElement.href = url;
-            downloadElement.setAttribute('download', filename);
-            document.body.appendChild(downloadElement);
-            downloadElement.click();
-            document.body.removeChild(downloadElement);
-        });
+        // Prefer the already-rendered payload so desktop builds work offline.
+        const commandSelector = rsg.uiElements[rsg.commandType].command;
+        const payload = document.querySelector(commandSelector).innerText;
+        const url = window.URL.createObjectURL(new Blob([payload], { type: 'application/octet-stream' }));
+        const downloadElement = document.createElement("a");
+        downloadElement.href = url;
+        downloadElement.setAttribute('download', filename);
+        document.body.appendChild(downloadElement);
+        downloadElement.click();
+        document.body.removeChild(downloadElement);
+        window.URL.revokeObjectURL(url);
     });
 }
 
