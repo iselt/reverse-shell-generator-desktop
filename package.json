@@ -5,24 +5,15 @@
   "description": "Desktop reverse shell generator powered by Tauri (system WebView)",
   "source": "index.html",
   "scripts": {
-    "build": "rm -rf ./dist && ./node_modules/.bin/parcel build",
     "desktop:prepare": "node scripts/prepare-desktop.mjs",
     "tauri": "tauri",
     "tauri:dev": "npm run desktop:prepare && tauri dev",
     "tauri:build": "npm run desktop:prepare && tauri build",
     "desktop:dev": "npm run desktop:prepare && cargo tauri dev",
-    "desktop:build": "npm run desktop:prepare && cargo tauri build"
-  },
-  "targets": {
-    "default": {
-      "sourceMap": false
-    }
+    "desktop:build": "npm run desktop:prepare && cargo tauri build",
+    "web:build": "npx --yes parcel@2.3.2 build index.html --dist-dir dist"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.11.0"
-  },
-  "optionalDependencies": {
-    "parcel": "2.3.2",
-    "parcel-transformer-obfuscation": "file:parcel-transformer-obfuscation"
   }
 }

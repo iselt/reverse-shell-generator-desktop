@@ -97,10 +97,10 @@ jobs:
             libsoup-3.0-dev \
             libjavascriptcoregtk-4.1-dev
 
-      # Desktop packaging only needs @tauri-apps/cli.
-      # Skip optional Parcel (native lmdb has no win32-arm64 prebuild).
+      # @tauri-apps/cli needs its platform optional natives.
+      # Parcel is optional only (may fail soft on win32-arm64) and is not used for desktop builds.
       - name: Install Tauri CLI
-        run: npm install --no-fund --no-audit --omit=optional
+        run: npm install --no-fund --no-audit
 
       - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0

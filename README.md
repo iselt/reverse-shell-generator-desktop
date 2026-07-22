@@ -74,11 +74,8 @@ HTTP_PROXY=http://127.0.0.1:7890 HTTPS_PROXY=http://127.0.0.1:7890 ./reverse-she
 ### Run / build
 
 ```bash
-# Desktop deps only (recommended; skips Parcel / native lmdb)
-npm install --omit=optional
-
-# Also install Parcel if you need the web/Netlify production bundle
-# npm install
+# Installs Tauri CLI; Parcel is optional (needed only for web/Netlify bundle)
+npm install
 
 # dev (opens the desktop window)
 npm run desktop:dev
