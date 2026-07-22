@@ -15,7 +15,6 @@ Built with **[Tauri 2](https://tauri.app/)** so the UI runs in the **system WebV
 - Same reverse / bind / MSFVenom / HoaxShell / assembled payload UI as the web app
 - Offline-friendly download & raw payload (no Netlify functions required)
 - LocalStorage for IP / port / theme persistence
-- Default HTTP(S) proxy: `127.0.0.1:7897` (Clash / V2Ray mixed port)
 
 ## Prebuilt binaries
 
@@ -38,27 +37,6 @@ Artifacts are uploaded per-target as `reverse-shell-generator-<platform>-<arch>`
 
 Installers: `.msi` / `.exe` (Windows), `.dmg` (macOS), `.AppImage` / `.deb` (Linux).
 
-## Network proxy
-
-On launch the app sets standard proxy environment variables to:
-
-```text
-http://127.0.0.1:7897
-```
-
-with `NO_PROXY=localhost,127.0.0.1,::1`.
-
-Override at runtime:
-
-```bash
-# custom proxy
-RSG_HTTP_PROXY=http://127.0.0.1:7890 ./reverse-shell-generator
-
-# or use the usual vars
-HTTP_PROXY=http://127.0.0.1:7890 HTTPS_PROXY=http://127.0.0.1:7890 ./reverse-shell-generator
-```
-
-> Note: the payload generator itself is offline. The proxy mainly affects any outbound requests made by the WebView (e.g. remote assets / future features). System WebView stacks may still use OS-level proxy settings depending on the platform.
 
 ## Develop
 

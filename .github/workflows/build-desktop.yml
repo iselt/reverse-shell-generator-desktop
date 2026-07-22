@@ -106,7 +106,6 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NO_PROXY: localhost,127.0.0.1,::1
         with:
           projectPath: .
           tauriScript: npm run tauri
@@ -209,8 +208,6 @@ jobs:
             | macOS x64 / arm64 | `.dmg`, `.app.tar.gz` |
             | Linux x64 / arm64 | `.AppImage`, `.deb` |
 
-            **Network:** defaults to HTTP(S) proxy `127.0.0.1:7897` (`RSG_HTTP_PROXY` / `HTTP_PROXY` to override).
-
             Engine: Tauri 2 + system WebView (WebView2 / WKWebView / WebKitGTK).
           prerelease: true
           make_latest: false
@@ -233,8 +230,6 @@ jobs:
             | Windows x64 / arm64 | `.msi`, `.exe` |
             | macOS x64 / arm64 | `.dmg`, `.app.tar.gz` |
             | Linux x64 / arm64 | `.AppImage`, `.deb` |
-
-            **Network:** defaults to HTTP(S) proxy `127.0.0.1:7897` (`RSG_HTTP_PROXY` / `HTTP_PROXY` to override).
 
             Engine: Tauri 2 + system WebView (WebView2 / WKWebView / WebKitGTK).
           draft: false
