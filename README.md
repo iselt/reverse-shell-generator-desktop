@@ -27,8 +27,16 @@ GitHub Actions builds **3 platforms × 2 architectures** on every push to `main`
 | **macOS** | ✅ | ✅ |
 | **Linux** | ✅ | ✅ |
 
-Artifacts are uploaded per-target as `reverse-shell-generator-<platform>-<arch>`.  
-Tagging `v*` also drafts a GitHub Release with installers (`.msi` / `.dmg` / `.AppImage` / `.deb`, etc.).
+Artifacts are uploaded per-target as `reverse-shell-generator-<platform>-<arch>`.
+
+### Automatic releases
+
+| Trigger | Release |
+| --- | --- |
+| Push to `main` | Updates prerelease tag **`continuous`** with the latest installers |
+| Tag `v*` (e.g. `v1.0.0`) | Publishes a normal GitHub Release for that version |
+
+Installers: `.msi` / `.exe` (Windows), `.dmg` (macOS), `.AppImage` / `.deb` (Linux).
 
 ## Network proxy
 
@@ -66,7 +74,11 @@ HTTP_PROXY=http://127.0.0.1:7890 HTTPS_PROXY=http://127.0.0.1:7890 ./reverse-she
 ### Run / build
 
 ```bash
-npm install
+# Desktop deps only (recommended; skips Parcel / native lmdb)
+npm install --omit=optional
+
+# Also install Parcel if you need the web/Netlify production bundle
+# npm install
 
 # dev (opens the desktop window)
 npm run desktop:dev

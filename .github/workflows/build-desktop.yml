@@ -97,11 +97,12 @@ jobs:
             libsoup-3.0-dev \
             libjavascriptcoregtk-4.1-dev
 
-      - name: Install frontend tools
-        run: npm ci
+      # Desktop packaging only needs @tauri-apps/cli.
+      # Skip optional Parcel (native lmdb has no win32-arm64 prebuild).
+      - name: Install Tauri CLI
+        run: npm install --no-fund --no-audit --omit=optional
 
-      - name: Build Tauri app (PR / branch)
-        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+      - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -110,39 +111,13 @@ jobs:
           projectPath: .
           tauriScript: npm run tauri
           args: ${{ matrix.args }}
-          uploadUnsignedWindows: true
-
-      - name: Build Tauri app (tag release)
-        if: ${{ startsWith(github.ref, 'refs/tags/') }}
-        uses: tauri-apps/tauri-action@v0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NO_PROXY: localhost,127.0.0.1,::1
-        with:
-          projectPath: .
-          tauriScript: npm run tauri
-          args: ${{ matrix.args }}
-          tagName: ${{ github.ref_name }}
-          releaseName: Reverse Shell Generator ${{ github.ref_name }}
-          releaseBody: |
-            Desktop builds (Tauri 2 / system WebView).
-
-            | Artifact pattern | Platform |
-            | --- | --- |
-            | `*-setup.exe` / `*.msi` | Windows |
-            | `*.dmg` / `*.app.tar.gz` | macOS |
-            | `*.AppImage` / `*.deb` | Linux |
-
-            Network: app defaults to HTTP(S) proxy `127.0.0.1:7897` (override with `RSG_HTTP_PROXY` / `HTTP_PROXY`).
-          releaseDraft: true
-          prerelease: false
           uploadUnsignedWindows: true
 
       - name: Collect artifacts
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p artifacts
+          mkdir -p "artifacts/${{ matrix.name }}"
           ROOT="src-tauri/target/${{ matrix.target }}/release"
           if [[ ! -d "$ROOT" ]]; then
             ROOT="src-tauri/target/release"
@@ -154,26 +129,119 @@ jobs:
               -name '*.dmg' -o -name '*.app.tar.gz' -o -name '*.msi' -o \
               -name '*.exe' -o -name '*.AppImage' -o -name '*.deb' -o \
               -name '*.rpm' -o -name '*.sig' \
-            \) -print -exec cp -v {} artifacts/ \;
+            \) -print -exec cp -v {} "artifacts/${{ matrix.name }}/" \;
           fi
           case "${{ matrix.platform }}" in
             windows)
               if [[ -f "$ROOT/reverse-shell-generator.exe" ]]; then
-                cp -v "$ROOT/reverse-shell-generator.exe" "artifacts/reverse-shell-generator-${{ matrix.arch }}.exe"
+                cp -v "$ROOT/reverse-shell-generator.exe" \
+                  "artifacts/${{ matrix.name }}/reverse-shell-generator-windows-${{ matrix.arch }}.exe"
               fi
               ;;
             *)
               if [[ -f "$ROOT/reverse-shell-generator" ]]; then
-                cp -v "$ROOT/reverse-shell-generator" "artifacts/reverse-shell-generator-${{ matrix.platform }}-${{ matrix.arch }}"
+                cp -v "$ROOT/reverse-shell-generator" \
+                  "artifacts/${{ matrix.name }}/reverse-shell-generator-${{ matrix.platform }}-${{ matrix.arch }}"
               fi
               ;;
           esac
-          ls -la artifacts || true
+          find "artifacts/${{ matrix.name }}" -type f -print || true
+          test -n "$(find "artifacts/${{ matrix.name }}" -type f | head -1)"
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: reverse-shell-generator-${{ matrix.name }}
-          path: artifacts/*
-          if-no-files-found: warn
+          path: artifacts/${{ matrix.name }}/*
+          if-no-files-found: error
           retention-days: 30
+
+  release:
+    name: Publish GitHub Release
+    needs: build
+    if: |
+      always() &&
+      github.event_name == 'push' &&
+      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v')) &&
+      needs.build.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          pattern: reverse-shell-generator-*
+          merge-multiple: true
+
+      - name: Prepare asset flat directory
+        run: |
+          set -euo pipefail
+          mkdir -p dist-release
+          find release-assets -type f | while read -r f; do
+            base="$(basename "$f")"
+            dest="dist-release/$base"
+            if [[ -e "$dest" ]]; then
+              parent="$(basename "$(dirname "$f")")"
+              dest="dist-release/${parent}-${base}"
+            fi
+            cp -v "$f" "$dest"
+          done
+          ls -lah dist-release
+          test -n "$(ls -A dist-release)"
+
+      - name: Publish continuous release (main)
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: continuous
+          name: Continuous Build
+          body: |
+            Automatic desktop builds from `${{ github.ref_name }}` (`${{ github.sha }}`).
+
+            | Matrix | Package patterns |
+            | --- | --- |
+            | Windows x64 / arm64 | `.msi`, `.exe` |
+            | macOS x64 / arm64 | `.dmg`, `.app.tar.gz` |
+            | Linux x64 / arm64 | `.AppImage`, `.deb` |
+
+            **Network:** defaults to HTTP(S) proxy `127.0.0.1:7897` (`RSG_HTTP_PROXY` / `HTTP_PROXY` to override).
+
+            Engine: Tauri 2 + system WebView (WebView2 / WKWebView / WebKitGTK).
+          prerelease: true
+          make_latest: false
+          files: dist-release/*
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish versioned release (tag)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Reverse Shell Generator ${{ github.ref_name }}
+          body: |
+            Desktop builds for **${{ github.ref_name }}** (commit `${{ github.sha }}`).
+
+            | Matrix | Package patterns |
+            | --- | --- |
+            | Windows x64 / arm64 | `.msi`, `.exe` |
+            | macOS x64 / arm64 | `.dmg`, `.app.tar.gz` |
+            | Linux x64 / arm64 | `.AppImage`, `.deb` |
+
+            **Network:** defaults to HTTP(S) proxy `127.0.0.1:7897` (`RSG_HTTP_PROXY` / `HTTP_PROXY` to override).
+
+            Engine: Tauri 2 + system WebView (WebView2 / WKWebView / WebKitGTK).
+          draft: false
+          prerelease: false
+          make_latest: true
+          generate_release_notes: true
+          files: dist-release/*
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
